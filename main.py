@@ -1,13 +1,28 @@
 import base64
+import os
 import io
 import time
 import openai
 from openai import OpenAI
+from elevenlabs.client import ElevenLabs
+from elevenlabs import stream
 from dotenv import load_dotenv
 #from picamera2 import Picamera2
 
 load_dotenv()
 cliente = OpenAI()
+elevenlabs_api_key = os.getenv('ELEVENLABS_API_KEY')
+elevenlabs = ElevenLabs(api_key=elevenlabs_api_key)
+
+def text_to_speech(elevenlabs, name):
+    audio_stream = elevenlabs.text_to_speech.stream(
+        text = name,
+        voice_id = 'YPQYiDk4YwegwaZcMMWE',
+        model = 'eleven_multilingual_v2',
+    )
+
+    stream(audio_stream)
+    return f'Audio finalizado'
 
 # def capture_image():
 #     stream = io.BytesIO()
@@ -40,7 +55,8 @@ def obtener_nombre(base64_image):
                 {
                     'role':'user',
                     'content': [
-                        {'type':'text', 'text': 'Identifica el nombre del objeto de la imagen y devuelve solo el nombre'},
+                        {'type':'text', 'text': """Identifica el nombre del objeto de la imagen y devuelve el siguiente texto si lo reconoce:
+                         <text>Objeto reconocido: [nombre del objeto]</text>"""},
                         {
                             'type': 'image_url',
                             'image_url': {
@@ -61,9 +77,11 @@ def obtener_nombre(base64_image):
         return f'Tu cuota de la API de OpenAI se excedió\n [-]{e}'
 
 # image = capture_image()
-# if image is None:
-#     print('Error: No se pudo capturar la imagen')
-# else:
-#     image_base64 = encode_image(image)
-#     name = obtener_nombre(image_base64)
-#     print(name)
+image = None #Para prueba si es None
+
+if image is None:
+    print('Error: No se pudo capturar la imagen')
+else:
+    image_base64 = encode_image(image)
+    name = obtener_nombre(image_base64)
+    text_to_speech()

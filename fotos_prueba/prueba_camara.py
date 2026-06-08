@@ -17,7 +17,7 @@ image_path = 'objeto2.jpeg'
 
 def text_to_speech(elevenlabs, name):
     audio_stream = elevenlabs.text_to_speech.stream(
-        text = name,
+        text = namee,
         voice_id = 'YPQYiDk4YwegwaZcMMWE',
         model_id = 'eleven_multilingual_v2',
     )
