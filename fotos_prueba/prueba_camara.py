@@ -59,13 +59,3 @@ def obtener_nombre(base64_image):
         return f'OpenAI API tuvo un error de conexión:\n [-]{e}'
     except openai.RateLimitError as e:
         return f'Tu cuota de la API de OpenAI se excedió\n [-]{e}'
-
-image_cod = encode_image(image_path)
-
-if image_cod is None:
-    print('Error: La imagen no se reconoció')
-else:
-    name = obtener_nombre(image_cod)
-    print(f'[+] EL nombre del objeto es {name}')
-
-print(text_to_speech(elevenlabs, name))
