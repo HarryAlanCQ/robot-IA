@@ -5,38 +5,49 @@ import time
 import openai
 from openai import OpenAI
 from elevenlabs.client import ElevenLabs
-from elevenlabs import stream
+from elevenlabs import stream, BadRequestError, UnauthorizedError, ForbiddenError
 from dotenv import load_dotenv
-#from picamera2 import Picamera2
+from picamera2 import Picamera2
 
 load_dotenv()
 cliente = OpenAI()
 elevenlabs_api_key = os.getenv('ELEVENLABS_API_KEY')
 elevenlabs = ElevenLabs(api_key=elevenlabs_api_key)
 
+
 def text_to_speech(elevenlabs, name):
-    audio_stream = elevenlabs.text_to_speech.stream(
-        text = name,
-        voice_id = 'YPQYiDk4YwegwaZcMMWE',
-        model = 'eleven_multilingual_v2',
-    )
+    if name is None:
+        name = "No reconocí el objeto"
 
-    stream(audio_stream)
-    return f'Audio finalizado'
+    try:
+        audio_stream = elevenlabs.text_to_speech.stream(
+            text = name,
+            voice_id = 'YPQYiDk4YwegwaZcMMWE',
+            model = 'eleven_multilingual_v2',
+        )
 
-# def capture_image():
-#     stream = io.BytesIO()
-#     try:
-#         with Picamera2() as camera:
-#             camera.resolution = (1024,768)
-#             time.sleep(2)
-#             camera.capture(stream, format='jpeg')
-#         stream.seek(0)
-#         return stream
+        stream(audio_stream)
+        return f'Audio finalizado'
+    except BadRequestError as e:
+        return f' [-] Error en la solciitud (400): {e}'
+    except UnauthorizedError:
+        return f' [-] Error de autenticación (401): API Key Inválida'
+    except ForbiddenError:
+        return f' [-] Acceso denegado (403): Verifica tu plan o permisos de la voz'
+
+def capture_image():
+    stream = io.BytesIO()
+    try:
+        with Picamera2() as camera:
+            camera.resolution = (1024,768)
+            time.sleep(2)
+            camera.capture(stream, format='jpeg')
+        stream.seek(0)
+        return stream
     
-#     except Exception as e:
-#         print(f'Error en la cámara\n [-] {e}')
-#         return None
+    except Exception as e:
+        print(f'Error en la cámara\n [-] {e}')
+        return None
     
 def encode_image(stream):
     if stream is None:
@@ -55,8 +66,7 @@ def obtener_nombre(base64_image):
                 {
                     'role':'user',
                     'content': [
-                        {'type':'text', 'text': """Identifica el nombre del objeto de la imagen y devuelve el siguiente texto si lo reconoce:
-                         <text>Objeto reconocido: [nombre del objeto]</text>"""},
+                        {'type':'text', 'text': 'Identifica el nombre del objeto de la imagen y devuelve el siguiente texto: <text>Objeto físico identificado [nombre del objeto]'},
                         {
                             'type': 'image_url',
                             'image_url': {
@@ -70,18 +80,21 @@ def obtener_nombre(base64_image):
         )
         return responses.choices[0].message.content
     except openai.APIError as e:
-        return f'OpenAI API devolvió un error:\n [-]{e}'
+        print(f'OpenAI API devolvió un error:\n [-]{e}')
+        return None
     except openai.APIConnectionError as e:
-        return f'OpenAI API tuvo un error de conexión:\n [-]{e}'
+        print(f'OpenAI API tuvo un error de conexión:\n [-]{e}')
+        return None
     except openai.RateLimitError as e:
-        return f'Tu cuota de la API de OpenAI se excedió\n [-]{e}'
+        print(f'Tu cuota de la API de OpenAI se excedió\n [-]{e}')
+        return None
 
-# image = capture_image()
-image = None #Para prueba si es None
+if __name__ == '__main__':
+    image = capture_image()
 
-if image is None:
-    print('Error: No se pudo capturar la imagen')
-else:
-    image_base64 = encode_image(image)
-    name = obtener_nombre(image_base64)
-    text_to_speech()
+    if image:
+        image_base64 = encode_image(image)
+        if image_base64:
+            nombre = obtener_nombre(image_base64)
+            if nombre:
+                text_to_speech(elevenlabs, nombre)

@@ -13,11 +13,11 @@ elevenlabs_api_key = os.getenv('ELEVENLABS_API_KEY')
 
 elevenlabs = ElevenLabs(api_key=elevenlabs_api_key)
 
-image_path = 'objeto2.jpeg'
+image_path = 'objeto1.jpeg'
 
 def text_to_speech(elevenlabs, name):
     audio_stream = elevenlabs.text_to_speech.stream(
-        text = namee,
+        text = name,
         voice_id = 'YPQYiDk4YwegwaZcMMWE',
         model_id = 'eleven_multilingual_v2',
     )
